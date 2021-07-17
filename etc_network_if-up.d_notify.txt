@@ -1,0 +1,29 @@
+#! /bin/sh
+# Send notification if wwan0 changes IP
+
+set -e
+
+# Don't bother if the netcard that came online is not wwan0
+if [ "$IFACE" != wwan0 ]; then
+	exit 0
+fi
+
+# Only run from ifup where the parameter is "start".
+if [ "$MODE" != start ]; then
+	exit 0
+fi
+
+# Only react on ipv4 or ipv6
+if [ "$ADDRFAM" != inet ] && [ "$ADDRFAM" != inet6 ]; then
+	exit 0
+fi
+
+#/sbin/ip rule add from $(/sbin/ifconfig wwan0|grep "inet "|awk '{print $2}') table wwan
+#/sbin/ip route add default via $(/sbin/ip route show 0.0.0.0/0 dev wwan0 | cut -d\  -f3) dev wwan0 table wwan
+
+# Run the "Update Cloudflare DNS with the new WAN IP via API" script
+if [ -x /root/bin/cloudflare/register-ip-at-cloudflare ]; then
+ /root/bin/cloudflare/register-ip-at-cloudflare > /dev/null 2>&1
+fi
+
+exit 0
